@@ -73,7 +73,7 @@ void enter_LVP(struct gpiod_line *MCLR, struct gpiod_line *PGC, struct gpiod_lin
     int i;
 
     // Drive MCLR to VIL
-    gpiod_line_set_value(MCLR, 1);
+    gpiod_line_set_value(MCLR, 0);
 
     // Wait 250 microseconds
     usleep(250);
@@ -86,8 +86,8 @@ void enter_LVP(struct gpiod_line *MCLR, struct gpiod_line *PGC, struct gpiod_lin
         pulse_high(PGC);
     }
 
-    // Wait 250 microseconds
-    usleep(250);
+    // Drive MCLR to VDD
+    gpiod_line_set_value(MCLR, 1);
 }
 
 void exit_LVP(struct gpiod_line *MCLR)
