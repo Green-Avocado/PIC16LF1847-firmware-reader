@@ -1,6 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <gpiod.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <time.h>
+#include <stdlib.h>
 
 #define PIC_PGC "GPIO17"
 #define PIC_PGD "GPIO18"
