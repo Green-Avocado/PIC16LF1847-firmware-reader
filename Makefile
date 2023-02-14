@@ -1,11 +1,17 @@
 CC=gcc
-CFLAGS=-Wall -Werror
+CFLAGS=-c -Wall
 LDFLAGS=-lgpiod
+SOURCES=src/main.c
+OBJECTS=$(SOURCES:.c=.o)
+EXECUTABLE=PIC16LF1847-firmware-reader
 
-PIC16LF1847-firmware-reader: src/main.c
-    $(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
+all: $(SOURCES) $(EXECUTABLE)
 
-.PHONY: clean
+$(EXECUTABLE): $(OBJECTS)
+	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+
+.c.o:
+	$(CC) $(CFLAGS) $< -o $@
 
 clean:
-	rm -f PIC16LF1847-firmware-reader
+	rm -rf $(OBJECTS) $(EXECUTABLE)
