@@ -5,16 +5,14 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#define PIC_PGC "GPIO17"
-#define PIC_PGD "GPIO18"
-#define PIC_MCLR "GPIO4"
+#define WAIT 1
 
 void pulse_high(struct gpiod_line *line)
 {
     gpiod_line_set_value(line, 1);
-    usleep(1);
+    usleep(WAIT);
     gpiod_line_set_value(line, 0);
-    usleep(1);
+    usleep(WAIT);
 }
 
 void send_command(struct gpiod_line *PGC, struct gpiod_line *PGD, uint16_t cmd) {
@@ -37,11 +35,9 @@ uint16_t read_data(struct gpiod_line *PGC, struct gpiod_line *PGD) {
     gpiod_line_set_direction_input(PGD);
 
     // Read data, LSB first
-    for (i = 0; i >= 16; i--) {
+    for (i = 0; i < 16; i++) {
         pulse_high(PGC);
-        if (gpiod_line_get_value(PGD)) {
-            data |= (1 << i);
-        }
+        data |= (gpiod_line_get_value(PGD)) >> i;
     }
 
     gpiod_line_set_direction_output(PGD, 0);
@@ -74,6 +70,8 @@ void dump_program_memory(struct gpiod_line *PGC, struct gpiod_line *PGD) {
 
 void enter_LVP(struct gpiod_line *MCLR, struct gpiod_line *PGC, struct gpiod_line *PGD)
 {
+    int i;
+
     // Drive MCLR to VIL
     gpiod_line_set_value(MCLR, 0);
 
@@ -81,9 +79,9 @@ void enter_LVP(struct gpiod_line *MCLR, struct gpiod_line *PGC, struct gpiod_lin
     usleep(250);
 
     // Enter the LVP key sequence
-    uint32_t lvp_key = 0x4D434C52;
+    uint32_t lvp_key = 0x4D434850;
 
-    for (int i = 31; i >= 0; i--) {
+    for (i = 0; i < 32; i++) {
         gpiod_line_set_value(PGD, (lvp_key >> i) & 1);
         pulse_high(PGC);
     }
@@ -105,16 +103,16 @@ int main(void) {
         return -1;
     }
 
-    struct gpiod_line *mclr = gpiod_chip_get_line(chip, 17);
-    struct gpiod_line *pgd = gpiod_chip_get_line(chip, 18);
-    struct gpiod_line *pgc = gpiod_chip_get_line(chip, 22);
+    struct gpiod_line *mclr = gpiod_chip_get_line(chip, 4);
+    struct gpiod_line *pgc = gpiod_chip_get_line(chip, 17);
+    struct gpiod_line *pgd = gpiod_chip_get_line(chip, 22);
     gpiod_line_request_output(mclr, "mclr", 0);
-    gpiod_line_request_output(pgd, "pgd", 0);
     gpiod_line_request_output(pgc, "pgc", 0);
+    gpiod_line_request_output(pgd, "pgd", 0);
 
     // Enter LVP and read program memory
-    enter_LVP(mclr, pgd, pgc);
-    dump_program_memory(pgd, pgc);
+    enter_LVP(mclr, pgc, pgd);
+    dump_program_memory(pgc, pgd);
     exit_LVP(mclr);
 
     // Release the lines
