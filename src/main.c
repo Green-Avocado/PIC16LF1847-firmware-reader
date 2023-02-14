@@ -37,7 +37,7 @@ uint16_t read_data(struct gpiod_line *PGC, struct gpiod_line *PGD) {
     // Read data, LSB first
     for (i = 0; i < 16; i++) {
         pulse_high(PGC);
-        data |= (gpiod_line_get_value(PGD)) >> i;
+        data |= (gpiod_line_get_value(PGD)) << i;
     }
 
     gpiod_line_set_direction_output(PGD, 0);
