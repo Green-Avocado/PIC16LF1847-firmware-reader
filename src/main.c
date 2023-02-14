@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #define PIC_PGC "GPIO17"
 #define PIC_PGD "GPIO18"
@@ -24,23 +25,19 @@ void pulse_low(struct gpiod_line *line)
     usleep(1);
 }
 
-void send_command(struct gpiod_line *pgc, struct gpiod_line *pgd, unsigned char cmd) {
-    gpiod_line_set_value(pgd, cmd & 0x01);
-    pulse_high(pgc);
-    gpiod_line_set_value(pgd, (cmd >> 1) & 0x01);
-    pulse_high(pgc);
-    gpiod_line_set_value(pgd, (cmd >> 2) & 0x01);
-    pulse_high(pgc);
-    gpiod_line_set_value(pgd, (cmd >> 3) & 0x01);
-    pulse_high(pgc);
-    gpiod_line_set_value(pgd, (cmd >> 4) & 0x01);
-    pulse_high(pgc);
-    gpiod_line_set_value(pgd, (cmd >> 5) & 0x01);
-    pulse_high(pgc);
-    gpiod_line_set_value(pgd, (cmd >> 6) & 0x01);
-    pulse_high(pgc);
-    gpiod_line_set_value(pgd, (cmd >> 7) & 0x01);
-    pulse_high(pgc);
+void send_command(struct gpiod_line *PGC, struct gpiod_line *PGD, uint16_t cmd) {
+    int i;
+    
+    // Send 6 clock pulses
+    for (i = 0; i < 6; i++) {
+        if ((cmd >> i) & 1) {
+            pulse_high(PGD);
+        } else {
+            pulse_low(PGD);
+        }
+        pulse_high(PGC);
+        pulse_low(PGC);
+    }
 }
 
 uint16_t read_data(struct gpiod_line *pgd, struct gpiod_line *pgc) {
@@ -76,20 +73,26 @@ uint16_t read_data(struct gpiod_line *pgd, struct gpiod_line *pgc) {
     return data;
 }
 
-void dump_program_memory(struct gpiod_line *pgd, struct gpiod_line *pgc) {
-    uint16_t address = 0;
+void dump_program_memory(struct gpiod_line *PGC, struct gpiod_line *PGD) {
+    int i;
+    uint16_t address = 0x0;
     uint16_t data;
-
-    // Send the READ instruction to the PIC16LF1847
-    send_instruction(0x4, pgd, pgc);
-
-    // Read the program memory data from the PIC16LF1847
-    for (address = 0; address < 0x1000; address++) {
-        data = read_data(pgd, pgc);
-        printf("0x%04x: 0x%04x\n", address, data);
-
-        // Increment the address for the next memory location
-        send_instruction(0x06, pgd, pgc);
+    uint16_t cmd;
+    
+    // Send reset address command
+    cmd = 0x16;
+    send_command(PGC, PGD, cmd);
+    
+    // Loop through each address
+    for (i = 0; i < 0x1000; i++) {
+        // Send increment address command
+        cmd = 0x06;
+        send_command(PGC, PGD, cmd);
+        
+        // Read data
+        data = read_data(PGC, PGD);
+        printf("0x%04X: 0x%04X\n", address, data);
+        address++;
     }
 }
 
