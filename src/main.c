@@ -40,35 +40,23 @@ void send_command(struct gpiod_line *PGC, struct gpiod_line *PGD, uint16_t cmd) 
     }
 }
 
-uint16_t read_data(struct gpiod_line *pgd, struct gpiod_line *pgc) {
+uint16_t read_data(struct gpiod_line *PGC, struct gpiod_line *PGD) {
+    uint16_t cmd = 0x04; // Command to read data
     uint16_t data = 0;
     int i;
 
-    // Set the PGC line low to initiate a data read
-    gpiod_line_set_value(pgc, 0);
-    pulse_low(pgc);
+    send_command(PGC, PGD, cmd);
 
-    // Read the most significant 8 bits of data
-    for (i = 7; i >= 0; i--) {
-        gpiod_line_set_value(pgc, 1);
-        pulse_high(pgc);
-
-        data |= (gpiod_line_get_value(pgd) << i);
-
-        gpiod_line_set_value(pgc, 0);
-        pulse_low(pgc);
+    // Read data, MSB first
+    pulse_high(PGC);
+    for (i = 15; i >= 0; i--) {
+        pulse_high(PGD);
+        pulse_low(PGD);
+        if (gpiod_line_get_value(PGD)) {
+            data |= (1 << i);
+        }
     }
-
-    // Read the least significant 8 bits of data
-    for (i = 15; i >= 8; i--) {
-        gpiod_line_set_value(pgc, 1);
-        pulse_high(pgc);
-
-        data |= (gpiod_line_get_value(pgd) << i);
-
-        gpiod_line_set_value(pgc, 0);
-        pulse_low(pgc);
-    }
+    pulse_low(PGC);
 
     return data;
 }
