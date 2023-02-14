@@ -17,26 +17,13 @@ void pulse_high(struct gpiod_line *line)
     usleep(1);
 }
 
-void pulse_low(struct gpiod_line *line)
-{
-    gpiod_line_set_value(line, 0);
-    usleep(1);
-    gpiod_line_set_value(line, 1);
-    usleep(1);
-}
-
 void send_command(struct gpiod_line *PGC, struct gpiod_line *PGD, uint16_t cmd) {
     int i;
     
     // Send 6 clock pulses
     for (i = 0; i < 6; i++) {
-        if ((cmd >> i) & 1) {
-            pulse_high(PGD);
-        } else {
-            pulse_low(PGD);
-        }
+        gpiod_line_set_value(PGD, (cmd >> i) & 1);
         pulse_high(PGC);
-        pulse_low(PGC);
     }
 }
 
@@ -47,16 +34,17 @@ uint16_t read_data(struct gpiod_line *PGC, struct gpiod_line *PGD) {
 
     send_command(PGC, PGD, cmd);
 
-    // Read data, MSB first
-    pulse_high(PGC);
-    for (i = 15; i >= 0; i--) {
-        pulse_high(PGD);
-        pulse_low(PGD);
+    gpiod_line_set_direction_input(PGD);
+
+    // Read data, LSB first
+    for (i = 0; i >= 16; i--) {
+        pulse_high(PGC);
         if (gpiod_line_get_value(PGD)) {
             data |= (1 << i);
         }
     }
-    pulse_low(PGC);
+
+    gpiod_line_set_direction_output(PGD, 0);
 
     return data;
 }
@@ -98,7 +86,6 @@ void enter_LVP(struct gpiod_line *MCLR, struct gpiod_line *PGC, struct gpiod_lin
     for (int i = 31; i >= 0; i--) {
         gpiod_line_set_value(PGD, (lvp_key >> i) & 1);
         pulse_high(PGC);
-        pulse_low(PGC);
     }
 
     // Wait 250 microseconds
