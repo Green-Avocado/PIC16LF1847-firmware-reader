@@ -73,7 +73,7 @@ void enter_LVP(struct gpiod_line *MCLR, struct gpiod_line *PGC, struct gpiod_lin
     int i;
 
     // Drive MCLR to VIL
-    gpiod_line_set_value(MCLR, 0);
+    gpiod_line_set_value(MCLR, 1);
 
     // Wait 250 microseconds
     usleep(250);
