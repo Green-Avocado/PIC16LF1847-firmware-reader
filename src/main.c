@@ -57,13 +57,13 @@ void dump_program_memory(struct gpiod_line *PGC, struct gpiod_line *PGD) {
     
     // Loop through each address
     for (i = 0; i < 0x1000; i++) {
-        // Send increment address command
-        cmd = 0x06;
-        send_command(PGC, PGD, cmd);
-        
         // Read data
         data = read_data(PGC, PGD);
         printf("0x%04X: 0x%04X\n", address, data);
+
+        // Send increment address command
+        cmd = 0x06;
+        send_command(PGC, PGD, cmd);
         address++;
     }
 }
